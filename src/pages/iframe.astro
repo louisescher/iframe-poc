@@ -1,11 +1,16 @@
 ---
 const contentHelper = () => {
   return {
-    content: "<!-- sui-edit-mode-content --> Some content"
+    content: "Some content"
   }
 }
 
+function prependEditComments<T>(c: T): T {
+  return ("<!-- sui-edit-mode-content --> " + c) as T;
+}
+
 const { content } = contentHelper();
+const c = prependEditComments(content);
 ---
 
 <html lang="en">
@@ -19,7 +24,7 @@ const { content } = contentHelper();
 	<body>
 		<h1>iFrame</h1>
     <p id="status"></p>
-    <div set:html={content} />
+    <div set:html={c} />
     <p id="data"></p>
 	</body>
 </html>
