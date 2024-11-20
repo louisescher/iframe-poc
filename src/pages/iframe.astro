@@ -1,0 +1,99 @@
+---
+const contentHelper = () => {
+  return {
+    content: "<!-- sui-edit-mode-content --> Some content"
+  }
+}
+
+const { content } = contentHelper();
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+		<title>iFrame</title>
+	</head>
+	<body>
+		<h1>iFrame</h1>
+    <p id="status"></p>
+    <div set:html={content} />
+    <p id="data"></p>
+	</body>
+</html>
+
+<style>
+	* {
+		box-sizing: border-box;
+		color: white;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+	}
+
+	html, body {
+		margin: 0;
+		background-color: #101010;
+	}
+
+	body {
+		padding: 1rem;
+	}
+</style>
+
+<script>
+  (() => {
+    // Source: https://stackoverflow.com/a/326076
+    const inIframe = () => window.self !== window.top;
+
+    if (!inIframe()) {
+      document.getElementById('status')!.textContent = 'Not running in iFrame.';
+      console.log("Not running in iFrame.");
+      return;
+    }
+
+    document.getElementById('status')!.textContent = 'Running in iFrame!';
+
+    const elements = document.evaluate(
+      "//*[contains(comment(), 'sui-edit-mode-')]",
+      document.querySelector('body') as HTMLBodyElement,
+      null,
+      XPathResult.ORDERED_NODE_ITERATOR_TYPE,
+      null,
+    );
+
+    const elementCollection: HTMLElement[] = [];
+
+    let element = elements.iterateNext();
+
+    while (element) {
+      elementCollection.push(element as HTMLElement);
+
+      element = elements.iterateNext();
+    }
+
+    for (const element of elementCollection) {
+      addAttributesToElement(element as HTMLElement);
+    }
+
+    function addAttributesToElement(element: HTMLElement) {
+      const comment = element.innerHTML.match(/sui-edit-mode-(\w+)/);
+
+      if (!comment) return;
+
+      element.dataset.suiEditNode = comment[1];
+    }
+
+    window.addEventListener('message', (e: MessageEvent<{ type: string, content: string }>) => {
+      if (e.data.type !== 'sui-edit-event') return;
+
+      const { node, value } = JSON.parse(e.data.content);
+
+      const elementToEdit = document.querySelector(`[data-sui-edit-node="${node}"]`);
+
+      if (!elementToEdit) return;
+
+      elementToEdit.innerHTML = value;
+    });
+  })();
+</script>
